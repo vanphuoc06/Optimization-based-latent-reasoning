@@ -1,4 +1,5 @@
-*Dự án Eureka
+# Dự án Eureka
+
 **Dự án cho quá trình Suy luận ẩn cấp độ cá thể tại thời điểm kiểm thử (Test-Time Instance-Level Latent Reasoning)**
 
 Tập trung giải quyết bài toán: **Làm sao để một mô hình ngôn ngữ (LLM) suy luận thông minh hơn, giải toán giỏi hơn mà không cần phải train (fine-tune) lại toàn bộ mô hình?**
@@ -13,28 +14,28 @@ Bản cài đặt này hỗ trợ các tập dữ liệu GSM8K, MATH-500 và GPQ
 
 ---
 
-## Kiến trúc hệ thống (Architecture)
+## Architecture
 
 Dưới đây là sơ đồ diễn giải kiến trúc của GradCuit:
 
 ```mermaid
 flowchart TD
-    subgraph Optimization [Vòng lặp tối ưu hóa Test-Time (Lặp N Bước)]
+    subgraph Optimization["Test-Time Optimization Loop (N Steps)"]
         direction TB
-        Input[Prompt đầu vào + Các Token Ẩn Liên tục] --> Solver((LLM Solver bị đóng băng trọng số))
-        Solver -->|Tiến tới| Draft[Câu trả lời nháp sinh ra]
+        Input["Input Prompt + Continuous Latent Tokens"] --> Solver(("Frozen LLM Solver"))
+        Solver -->|Forward Pass| Draft["Generated Draft Answer"]
         
-        Draft --> Verifier[API: vLLM Verifier Server]
-        Verifier -->|Chấm điểm đúng/sai| Reward{Điểm thưởng / Reward}
+        Draft --> Verifier["API: vLLM Verifier Server"]
+        Verifier -->|Evaluate Answer| Reward{"Reward / Penalty"}
         
-        Reward -->|Tính toán thuật toán| Loss[Policy Gradient Loss]
-        Loss -.->|Backward Pass qua Attention Circuit| Update[Cập nhật lại giá trị các Token Ẩn]
+        Reward -->|Compute Loss| Loss["Policy Gradient Loss"]
+        Loss -.->|Backward Pass via Attention Circuit| Update["Update Latent Tokens"]
         
-        Update -.->|Làm mới đầu vào| Input
+        Update -.->|Next Iteration Input| Input
     end
     
-    Update ==>|Sau khi đạt ngưỡng tối ưu| FinalSolver((LLM Solver bị đóng băng trọng số))
-    FinalSolver ==> FinalAnswer((Câu trả lời chính xác và thông minh nhất))
+    Update ==>|After Convergence| FinalSolver(("Frozen LLM Solver"))
+    FinalSolver ==> FinalAnswer(("Final Optimized Answer"))
     
     classDef llm fill:#f9d0c4,stroke:#333,stroke-width:2px;
     classDef var fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px;
@@ -47,7 +48,7 @@ flowchart TD
 
 ---
 
-## Cài đặt
+## Installation
 
 Yêu cầu Python 3.10 trở lên. Hãy cài đặt bản build PyTorch tương thích với CUDA cho hệ thống của bạn, sau đó chạy:
 
@@ -59,7 +60,7 @@ Quá trình đánh giá MATH-500 sử dụng trình phân tích cú pháp `latex
 
 Mô hình xác minh (verifier) sử dụng một máy chủ vLLM tương thích với OpenAI. Trình giải toán (solver) và trình xác minh (verifier) thông thường chạy trên các tiến trình (processes) riêng biệt và có thể sử dụng các GPU khác nhau.
 
-## Bắt đầu nhanh
+## Quick Start
 
 Chỉnh sửa các thiết lập tĩnh của GPU và mô hình trong hai script ví dụ. Khởi chạy trình xác minh trước:
 
@@ -77,7 +78,7 @@ Ví dụ này sử dụng định danh mô hình công khai `meta-llama/Llama-3.
 
 GPQA Diamond là một tập dữ liệu giới hạn (gated). Hãy chấp nhận các điều khoản dữ liệu của nó và xác thực bằng tài khoản Hugging Face trước khi sử dụng `gpqa_diamond`.
 
-## Các tham số chính
+## Main Arguments
 
 `src/main.py` yêu cầu khai báo tường minh tất cả các tham số định hình thí nghiệm. Hãy chạy:
 
@@ -94,7 +95,7 @@ python src/main.py --help
 Sử dụng cờ `--resume` với cùng các tham số thí nghiệm để tiếp tục chạy từ thư mục đầu ra mới nhất phù hợp.
 API key, khi cần, sẽ được đọc từ biến môi trường `VLLM_API_KEY`.
 
-## Đầu ra (Outputs)
+## Outputs
 
 Mỗi lần chạy sẽ ghi ra các tệp sau:
 
